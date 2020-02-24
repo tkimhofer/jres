@@ -1,10 +1,12 @@
 #' Peak filter based on observed splitting pattern
-#' @param dfp peak list
-#' @param noise noise level
-#' @param f1.var max diff in f1 (Hz), used for matching singlets to zero 
+#' @param dfp Dataframe describing detected Jres features (see description)
+#' @param noise Noise threshold
+#' @param dev.f1.hz max diff in f1 (Hz), used for matching singlets to zero 
+#' @param dev.Jcoup.hz max diff Jcopuling symmetry
+#' @description dfp must have the following two columns: cent.f2 (center position f2 dimensions), cent.f1 (center position f1 dimension)
 #' @author [Torben Kimhofer](https://tkimhofer.com)
 
-filter_multiplicity=function(dfp, noise, f1.var=0.5){
+filter_multiplicity=function(dfp, noise, dev.f1.hz=0.2, dev.Jcoup.hz=1.5){
   
   # use multiplicity as filter, all have same f2 value
   dfp$ppm.f2R=round(dfp$cent.f2, 4)
@@ -19,17 +21,20 @@ filter_multiplicity=function(dfp, noise, f1.var=0.5){
   
   # add in peak missing
   for(i in 1:length(un)){
+    
+    #print(i)
     # which peaks have the same f2 value
     idx=which(dfp$ppm.f2R==un[i])
     
     # if there is only one value, the it must be a singlet
     if(length(idx)==1){
       # make sure f1 value is close to zero (=singlet)
-      if(abs(dfp$cent.f1[idx])<f1.var){
+      if(abs(dfp$cent.f1[idx])<dev.f1.hz){
         tl[[c]]=dfp[idx,]
         tl[[c]]$Signal.ID=c
         tl[[c]]$Signal.nPeaks=length(idx)
         tl[[c]]$Signal.PeakID=1
+        #tl[[c]]$type='S'
         c=c+1
       }else{
         er[[cr]]=dfp[idx,]
@@ -37,7 +42,7 @@ filter_multiplicity=function(dfp, noise, f1.var=0.5){
         dfp$ok[idx]='Centre position missing'
       }
     }else{
-      mid=which(abs(dfp$cent.f1[idx])<f1.var)
+      mid=which(abs(dfp$cent.f1[idx])<dev.f1.hz)
       
       # if uneven number of peaks and no center position
       if(length(mid)==0 & length(idx)/2!=round(length(idx)/2)){
@@ -70,7 +75,7 @@ filter_multiplicity=function(dfp, noise, f1.var=0.5){
       }
       
       # abs J coupling larger than 1.5, so that
-      if(length(which(Jc[seq(1, length(Jc), by=2)]>1.5))>0){
+      if(length(which(Jc[seq(1, length(Jc), by=2)]>dev.Jcoup.hz))>0){
         er[[cr]]=dfp[idx,]
         cr=cr+1
         dfp$ok[idx]='Jcoup wrong'

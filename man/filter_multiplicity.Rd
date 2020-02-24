@@ -4,17 +4,19 @@
 \alias{filter_multiplicity}
 \title{Peak filter based on observed splitting pattern}
 \usage{
-filter_multiplicity(dfp, noise, f1.var = 0.5)
+filter_multiplicity(dfp, noise, dev.f1.hz = 0.2, dev.Jcoup.hz = 1.5)
 }
 \arguments{
-\item{dfp}{peak list}
+\item{dfp}{Dataframe describing detected Jres features (see description)}
 
-\item{noise}{noise level}
+\item{noise}{Noise threshold}
 
-\item{f1.var}{max diff in f1 (Hz), used for matching singlets to zero}
+\item{dev.f1.hz}{max diff in f1 (Hz), used for matching singlets to zero}
+
+\item{dev.Jcoup.hz}{max diff Jcopuling symmetry}
 }
 \description{
-Peak filter based on observed splitting pattern
+dfp must have the following two columns: cent.f2 (center position f2 dimensions), cent.f1 (center position f1 dimension)
 }
 \author{
 [Torben Kimhofer](https://tkimhofer.com)
