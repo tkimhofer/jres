@@ -1,0 +1,21 @@
+Package: jres
+Type: Package
+Title: Jres NMR feature extraction
+Version: 1.0
+Date: 2020-02-04
+Author: Torben Kimhofer
+Maintainer: Torben Kimhofer <torben.kimhofer@murdoch.edu.au>
+Description: Jres NMR peak picking and bounding box determination.
+License: GPL (>= 2)
+Imports: 
+  Rcpp (>= 1.0.3), 
+  ggplot2, 
+  reshape2, 
+  fields, 
+  gridExtra, 
+  scales, 
+  colorRamps, 
+  MetaboMate
+LinkingTo: Rcpp, RcppArmadillo
+RoxygenNote: 7.0.2
+SystemRequirements: C++11
