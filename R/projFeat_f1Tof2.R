@@ -15,22 +15,22 @@ projFeat_f1Tof2=function(plist, jr, sf, lwi){
   #f1.hz=as.numeric(rownames(jr))
   
   
-  projM=apply(plist, 1, function(feat, js=jr, lw=lwi){
-    center=feat[2]+((feat[3])/sf)
-    idx.row=feat[8]:feat[9]
-    idx.col=feat[10]:feat[11]
+  
+  projM=lapply(1:nrow(plist), function(i, ppl=plist, js=jr, lw=lw.ppm, f2p=f2.ppm){
+    feat=ppl[i,]
+    center=feat$cent.f2+(feat$cent.f1/sf)
     
-    if(length(idx.row)>2 & length(idx.col)>4){
-      sub=js[idx.row, idx.col]
-      
-      out=dcauchy(f2.ppm, loc=center, scale=lw)
-      #idx=order(out, decreasing = T)[1:4]
-      # scale caucy based on feature inensity
-      out=out*(feat[12]/max(out))
-      out
-    }
+    
+    out=dcauchy(f2p, loc=center, scale=lw)
+    #idx=order(out, decreasing = T)[1:4]
+    # scale caucy based on feature inensity
+    out=out*(feat$Int/max(out))
+    out
+    
     
   })
+  
+  
   
   if(is.list(projM)){
     projM=do.call(rbind, projM[sapply(projM, length)>0])

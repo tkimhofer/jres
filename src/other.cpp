@@ -298,7 +298,7 @@ List pickPeaks_rcpp(NumericMatrix jr, NumericVector f1hz, NumericVector f2ppm, d
   
   NumericVector dfb = diff(f1hz); // 0.3 Hz in one increment
   double doub = boundary / median(dfb); // if boundary is 10, then 34 indices increments amounts to about 10 Hz
-  double add_row = round( doub ) +1 ; // if boundary is 10, then 34 indices increments amounts to about 10 Hz
+  int add_row = round( doub ) +1 ; // if boundary is 10, then 34 indices increments amounts to about 10 Hz
   
   NumericVector df2b = diff(f2hz);
   double doub1 = boundary / median(df2b);
@@ -373,23 +373,12 @@ List pickPeaks_rcpp(NumericMatrix jr, NumericVector f1hz, NumericVector f2ppm, d
        
         // include function here to perform LoG for peak matching
         // List logres = lapOfG(sub, f1hz_upd, f2hz_upd, cent_f1hz_sub, cent_f2hz_sub, sf, npix);
-        
-        // re-do lapOfG after f2 axis symmetrisation (peak overlap results in too small bb) 
-        
-        
-       
-        
         List logres = lapOfG(sub, f1hz_upd, f2hz_upd, cent_f1hz_sub, cent_f2hz_sub, sf, npix);
         double gsd_ori = logres[0];
         double add_gsd = gsd_ori;
-        
+
        
-        
-        // 
-        // NumericMatrix sub_symf2 = matsymminf2(sub, cent_f2_idx);
-        // List logres_symf2 = lapOfG(sub_symf2, f1hz_upd, f2hz_upd, cent_f1hz_sub, cent_f2hz_sub, sf, npix);
-        // double gsd_sumf2 = logres_symf2[0];
-       
+       // re-do lapOfG after f2 axis symmetrisation (peak overlap results in too small bb) 
         if (gsd_ori < 0.25 ) {
           sub_sym = matsymminf2f1(sub, cent_f1_idx, cent_f2_idx);
           List logres_sym = lapOfG(sub_sym, f1hz_upd, f2hz_upd, cent_f1hz_sub, cent_f2hz_sub, sf, npix);
@@ -401,60 +390,72 @@ List pickPeaks_rcpp(NumericMatrix jr, NumericVector f1hz, NumericVector f2ppm, d
         // define bounding box with log sd value
         
         // characterise signal
-        //double gsd_ori = logres[0]; 
-        // Rcout << gsd_ori << "\n";
+
         
-        // // peaks unequally extend in f1 and f2, therefore applying adjustment factors for f1 and f2
-        double add1_f1 = gsd_ori * 1;
-        double add1_f2 = gsd_ori * 1;
-        
-        doub = add1_f1 / median(dfb); // if boundary is 10, then 34 indices increments amounts to about 10 Hz
-        add_row = round( doub ) +1; 
+        // define peak bounding box for prediction with tf
+        double add1_f1 = add_gsd * 1;
+        double add1_f2 = add_gsd * 1;
+// 
+        double doub_feat = add1_f1 / median(dfb);
+        int add_row_feat = round( doub_feat ) + 1;
+        // //
+        double doub1_feat = add1_f2 / median(df2b);
+        int add_col_feat = round( doub1_feat ) +1;
         // 
-        doub1 = add1_f2 / median(df2b);
-        add_col = round( doub1 ) +1;
-        
-        
-        IntegerVector d_f1 ;
-        IntegerVector d_f2 ;
+        // 
+        IntegerVector d_f1(2) ;
+        IntegerVector d_f2(2) ;
         //
-        d_f1[0] = getBoundary(i, add_row, jr.nrow(), '-');
-        d_f1[1] = getBoundary(i, add_row, jr.nrow(), '+');
+        
+        
+        int f1l_idx_f = getBoundary(i, add_row_feat, jr.nrow()-1, '-');
+        int f1h_idx_f = getBoundary(i, add_row_feat, jr.nrow()-1, '+');
+        
+        int f2l_idx_f = getBoundary(j, add_col_feat, jr.ncol()-1, '-');
+        int f2h_idx_f = getBoundary(j, add_col_feat, jr.ncol()-1, '+');
+        
+        // d_f1(0) = getBoundary(i, add_row_feat, jr.nrow()-1, '-');
+        // d_f1(1) = getBoundary(i, add_row_feat, jr.nrow()-1, '+');
+        // 
+        // d_f2(0) = getBoundary(j, add_col_feat, jr.ncol()-1, '-');
+        // d_f2(1) = getBoundary(j, add_col_feat, jr.ncol()-1, '+');
 
-        d_f2[0] = getBoundary(j, add_col, jr.ncol(), '-');
-        d_f2[1] = getBoundary(j, add_col, jr.ncol(), '+');
-
+        
         // // 
         // //Integer d_f2 = {(which_min( abs(( f2hz[j] - add1_f2 ) - f2hz ))),  (which_max( abs(( f2hz[i] - add1_f2 ) - f1hz )))};
         // 
-        // // Rcout << d_f1 << "\n";
-        // // Rcout << d_f2 << "\n";
-        NumericMatrix feat = jr( Range(d_f1[0], d_f1[1]) , Range(d_f2[0], d_f2[1]) );
+        // Rcout << d_f1 << "\n";
+        // Rcout << d_f2 << "\n";
+       NumericMatrix feat = jr( Range(f1l_idx_f, f1h_idx_f) , Range(f2l_idx_f, f2h_idx_f) );
         
         
         
         DataFrame outs = DataFrame::create( _["P.peakOri"] = 1, 
                                             _["cent.f1"] =cent_f1hz_sub,  
                                             _["cent.f2"] = cent_f2hz_sub / sf, 
-                                            _["cent.f1_sub"] =cent_f1hz_upd,  
-                                            _["cent.f2_sub"] = cent_f2hz_upd / sf, 
+                                            _["cent.f1_sub_idx"] =cent_f1_idx,  
+                                            _["cent.f2_sub_idx"] = cent_f2_idx, 
                                             _["LoG.hz_ori"] = gsd_ori,
-                                            // _["LoG.hz_symf1f2"] = gsd_sumf2f1,
-                                            // _["LoG.hz_sumf2"] = gsd_sumf2,
-                                            //_["npix_max"] = max( npix ),
-                                            // _["addrow"] = add_row,
-                                            // _["addrow"] = add_col,
-                                           // _["bb.width"] = add1,
-                                           _["bb.width.f1"] = add_gsd,
-                                           _["bb.width.f2"] = add_gsd,
+                                            _["doub"] = doub,
+                                            _["add_row"] = add_row,
+                                            _["doub1"] = doub1,
+                                            _["add_col"] = add_col,
+                                            _["add_row_feat"] = add_row_feat,
+                                            _["add_col_feat"] = add_col_feat,
+                                            _["bb.width.f1"] = add_gsd,
+                                            _["bb.width.f2"] = add_gsd,
                                             _["f1.idx"] = i,
                                             _["f2.idx"] = j,
-                                            _["f1.idx_sub"] = cent_f1_idx,
-                                           _["f2.idx_sub"] = cent_f2_idx,
-                                            // _["f1.add.low"] = d_f1[0],
-                                            // _["f1.add.high"] = d_f1[1],
-                                            // _["f2.add.low"] = d_f2[0] ,
-                                            // _["f2.add.high"] = d_f2[1],
+                                            // _["df1_0"] = d_f1(0),
+                                            // _["df1_1"] = d_f1(1),
+                                            // // _["df2_0"] = d_f2(0),
+                                            // // _["df2_1"] = d_f2(1),
+                                            _["ncol"] =jr.ncol()-1,
+                                            _["nrow"] =jr.nrow()-1,
+                                            // _["f1.add.low"] = f1l_idx_f,
+                                            // _["f1.add.high"] = f1h_idx_f,
+                                            // _["f2.add.low"] = f2l_idx_f,
+                                            // _["f2.add.high"] = f2h_idx_f,
                                              _["Int"] = jr(i,j),
                                              _["sym"] = sym
         );
