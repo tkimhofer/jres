@@ -4,7 +4,7 @@
 \alias{projFeat_f1Tof2}
 \title{Create artificial 1D NMR by Jres feature projection}
 \usage{
-projFeat_f1Tof2(plist, jr, sf, lwi)
+projFeat_f1Tof2(plist, jr, sf, lw.ppm)
 }
 \arguments{
 \item{plist}{Dataframe of Jres peak summaries}

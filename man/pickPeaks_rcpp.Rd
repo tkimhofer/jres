@@ -4,7 +4,7 @@
 \alias{pickPeaks_rcpp}
 \title{Perform peak picking and get bounding box dimensions}
 \usage{
-pickPeaks_rcpp(jr, f1hz, f2ppm, noise, boundary, sf)
+pickPeaks_rcpp(jr, f1hz, f2ppm, noise, boundary, sf, dbug)
 }
 \arguments{
 \item{jr}{Jres matrix, f1 in rows and f2 in cols}

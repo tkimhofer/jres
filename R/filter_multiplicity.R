@@ -12,6 +12,10 @@ filter_multiplicity=function(dfp, noise, dev.f1.hz=0.2, dev.Jcoup.hz=1.5){
   dfp$ppm.f2R=round(dfp$cent.f2, 4)
   un=unique(dfp$ppm.f2R)
   
+  dfp$ppm.f1R=round(dfp$cent.f1, 4)
+  
+  
+  
   tl=list() # peaks that have acceptable multiplicity pattern
   er=list() # peaks that have some problems in multiplicity
   dfp$ok=NA
@@ -51,14 +55,69 @@ filter_multiplicity=function(dfp, noise, dev.f1.hz=0.2, dev.Jcoup.hz=1.5){
         cr=cr+1
         next}
       
-      # if multiple centres
+      # if multiple centres: does this happen at all?
       if(length(mid)>1){
         dfp$ok[idx]='multiple centers';
         er[[cr]]=dfp[idx,]
         cr=cr+1
         next}
+  
+      
+      # one center
+      if(length(mid)==1 & (length(idx)-1) %% 2 ==0 ){
+        # center at zero
+        r1res=dfp$ppm.f1R[idx]- dfp$ppm.f1R[idx[mid]]
+        r1resm=abs(r1res[-mid])
+        r2resord=order(r1resm)
+        
+        #check symmetry in f2
+        pdist=abs(diff(r1resm[r2resord])[seq(from=1, by=2, length.out = (length(r1res)-1)/2)])
+        if(!any(pdist>dev.f1.hz)){
+          
+          tl[[c]]=dfp[idx,]
+          #tl[[c]]=tl[[c]][order(abs(tl[[c]][,5])),]
+          tl[[c]]$Signal.ID=c
+          tl[[c]]$Signal.nPeaks=length(idx)
+          tl[[c]]$Signal.PeakID=NA
+          tl[[c]]$Signal.PeakID[mid]=0
+          tl[[c]]$Signal.PeakID[-mid][r2resord]=rep(1:((length(r1res)-1)/2), each=2)*sign(r1res[-mid][r2resord])
+          c=c+1
+        }
+        
+        
+      }
+      
+      
+      # no center but symmetric
+      if(length(mid)==0 & (length(idx)) %% 2 ==0 ){
+        # center at zero
+        r1res=dfp$ppm.f1R[idx]- dfp$ppm.f1R[idx[mid]]
+        r1resm=abs(r1res)
+        r2resord=order(r1resm)
+        
+        #check symmetry in f2
+        pdist=abs(diff(r1resm[r2resord])[seq(from=1, by=2, length.out = (length(r1res))/2)])
+        if(!any(pdist>dev.f1.hz)){
+          
+          tl[[c]]=dfp[idx,]
+          #tl[[c]]=tl[[c]][order(abs(tl[[c]][,5])),]
+          tl[[c]]$Signal.ID=c
+          tl[[c]]$Signal.nPeaks=length(idx)
+          tl[[c]]$Signal.PeakID=NA
+          #tl[[c]]$Signal.PeakID[mid]=0
+          tl[[c]]$Signal.PeakID[r2resord]=rep(1:((length(r1res)-1)/2), each=2)*sign(r1res[r2resord])
+          c=c+1
+        }
+        
+        
+      }
+      
+      
+      
+      
       
       # number of peaks is not symmetric when line mirrored from f1=0
+      # this means if it is uneven
       if((length(idx)-length(mid))/2 != round((length(idx)-length(mid))/2)){
         er[[cr]]=dfp[idx,]
         cr=cr+1

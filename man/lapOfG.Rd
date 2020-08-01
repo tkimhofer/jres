@@ -4,7 +4,7 @@
 \alias{lapOfG}
 \title{Calculate Laplacian of Gaussians to determine peak size / bounding box dimension}
 \usage{
-lapOfG(sub, f1hz, f2hz, cent_f1hz, cent_f2hz, sf, npix)
+lapOfG(sub, f1hz, f2hz, cent_f1hz, cent_f2hz, sf, npix, dbug)
 }
 \arguments{
 \item{sub}{Matrix with signal}

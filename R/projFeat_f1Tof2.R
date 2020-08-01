@@ -9,7 +9,7 @@
 
 
 
-projFeat_f1Tof2=function(plist, jr, sf, lwi){
+projFeat_f1Tof2=function(plist, jr, sf, lw.ppm){
   
   f2.ppm=as.numeric(colnames(jr))
   #f1.hz=as.numeric(rownames(jr))

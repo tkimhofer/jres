@@ -6,6 +6,36 @@
 
 using namespace Rcpp;
 
+// biliInter
+arma::mat biliInter(arma::vec x, arma::vec y, arma::mat z, arma::vec xout, arma::vec yout);
+RcppExport SEXP _jres_biliInter(SEXP xSEXP, SEXP ySEXP, SEXP zSEXP, SEXP xoutSEXP, SEXP youtSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::vec >::type x(xSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type y(ySEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type z(zSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type xout(xoutSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type yout(youtSEXP);
+    rcpp_result_gen = Rcpp::wrap(biliInter(x, y, z, xout, yout));
+    return rcpp_result_gen;
+END_RCPP
+}
+// reshape_submatToMat
+arma::mat reshape_submatToMat(int si_f2, int si_f1, int xdim_f2, int xdim_f1, arma::rowvec spec);
+RcppExport SEXP _jres_reshape_submatToMat(SEXP si_f2SEXP, SEXP si_f1SEXP, SEXP xdim_f2SEXP, SEXP xdim_f1SEXP, SEXP specSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< int >::type si_f2(si_f2SEXP);
+    Rcpp::traits::input_parameter< int >::type si_f1(si_f1SEXP);
+    Rcpp::traits::input_parameter< int >::type xdim_f2(xdim_f2SEXP);
+    Rcpp::traits::input_parameter< int >::type xdim_f1(xdim_f1SEXP);
+    Rcpp::traits::input_parameter< arma::rowvec >::type spec(specSEXP);
+    rcpp_result_gen = Rcpp::wrap(reshape_submatToMat(si_f2, si_f1, xdim_f2, xdim_f1, spec));
+    return rcpp_result_gen;
+END_RCPP
+}
 // convolve3cpp
 arma::mat convolve3cpp(arma::mat A, arma::mat B);
 RcppExport SEXP _jres_convolve3cpp(SEXP ASEXP, SEXP BSEXP) {
@@ -15,20 +45,6 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::mat >::type A(ASEXP);
     Rcpp::traits::input_parameter< arma::mat >::type B(BSEXP);
     rcpp_result_gen = Rcpp::wrap(convolve3cpp(A, B));
-    return rcpp_result_gen;
-END_RCPP
-}
-// d2gauss_cpp
-Rcpp::NumericVector d2gauss_cpp(NumericVector x, NumericVector y, NumericVector mu, NumericVector sigma);
-RcppExport SEXP _jres_d2gauss_cpp(SEXP xSEXP, SEXP ySEXP, SEXP muSEXP, SEXP sigmaSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< NumericVector >::type x(xSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type y(ySEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type mu(muSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type sigma(sigmaSEXP);
-    rcpp_result_gen = Rcpp::wrap(d2gauss_cpp(x, y, mu, sigma));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -143,8 +159,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // lapOfG
-List lapOfG(NumericMatrix sub, NumericVector f1hz, NumericVector f2hz, double cent_f1hz, double cent_f2hz, double sf, NumericVector npix);
-RcppExport SEXP _jres_lapOfG(SEXP subSEXP, SEXP f1hzSEXP, SEXP f2hzSEXP, SEXP cent_f1hzSEXP, SEXP cent_f2hzSEXP, SEXP sfSEXP, SEXP npixSEXP) {
+List lapOfG(NumericMatrix sub, NumericVector f1hz, NumericVector f2hz, double cent_f1hz, double cent_f2hz, double sf, NumericVector npix, bool dbug);
+RcppExport SEXP _jres_lapOfG(SEXP subSEXP, SEXP f1hzSEXP, SEXP f2hzSEXP, SEXP cent_f1hzSEXP, SEXP cent_f2hzSEXP, SEXP sfSEXP, SEXP npixSEXP, SEXP dbugSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -155,13 +171,14 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< double >::type cent_f2hz(cent_f2hzSEXP);
     Rcpp::traits::input_parameter< double >::type sf(sfSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type npix(npixSEXP);
-    rcpp_result_gen = Rcpp::wrap(lapOfG(sub, f1hz, f2hz, cent_f1hz, cent_f2hz, sf, npix));
+    Rcpp::traits::input_parameter< bool >::type dbug(dbugSEXP);
+    rcpp_result_gen = Rcpp::wrap(lapOfG(sub, f1hz, f2hz, cent_f1hz, cent_f2hz, sf, npix, dbug));
     return rcpp_result_gen;
 END_RCPP
 }
 // pickPeaks_rcpp
-List pickPeaks_rcpp(NumericMatrix jr, NumericVector f1hz, NumericVector f2ppm, double noise, double boundary, double sf);
-RcppExport SEXP _jres_pickPeaks_rcpp(SEXP jrSEXP, SEXP f1hzSEXP, SEXP f2ppmSEXP, SEXP noiseSEXP, SEXP boundarySEXP, SEXP sfSEXP) {
+List pickPeaks_rcpp(NumericMatrix jr, NumericVector f1hz, NumericVector f2ppm, double noise, double boundary, double sf, bool dbug);
+RcppExport SEXP _jres_pickPeaks_rcpp(SEXP jrSEXP, SEXP f1hzSEXP, SEXP f2ppmSEXP, SEXP noiseSEXP, SEXP boundarySEXP, SEXP sfSEXP, SEXP dbugSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -171,14 +188,44 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< double >::type noise(noiseSEXP);
     Rcpp::traits::input_parameter< double >::type boundary(boundarySEXP);
     Rcpp::traits::input_parameter< double >::type sf(sfSEXP);
-    rcpp_result_gen = Rcpp::wrap(pickPeaks_rcpp(jr, f1hz, f2ppm, noise, boundary, sf));
+    Rcpp::traits::input_parameter< bool >::type dbug(dbugSEXP);
+    rcpp_result_gen = Rcpp::wrap(pickPeaks_rcpp(jr, f1hz, f2ppm, noise, boundary, sf, dbug));
+    return rcpp_result_gen;
+END_RCPP
+}
+// d2gauss_cpp
+Rcpp::NumericVector d2gauss_cpp(NumericVector x, NumericVector y, NumericVector mu, NumericVector sigma);
+RcppExport SEXP _jres_d2gauss_cpp(SEXP xSEXP, SEXP ySEXP, SEXP muSEXP, SEXP sigmaSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericVector >::type x(xSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type y(ySEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type mu(muSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type sigma(sigmaSEXP);
+    rcpp_result_gen = Rcpp::wrap(d2gauss_cpp(x, y, mu, sigma));
+    return rcpp_result_gen;
+END_RCPP
+}
+// d2cauchy_cpp
+Rcpp::NumericVector d2cauchy_cpp(NumericVector x, NumericVector y, NumericVector mu, const double gamma);
+RcppExport SEXP _jres_d2cauchy_cpp(SEXP xSEXP, SEXP ySEXP, SEXP muSEXP, SEXP gammaSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericVector >::type x(xSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type y(ySEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type mu(muSEXP);
+    Rcpp::traits::input_parameter< const double >::type gamma(gammaSEXP);
+    rcpp_result_gen = Rcpp::wrap(d2cauchy_cpp(x, y, mu, gamma));
     return rcpp_result_gen;
 END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_jres_biliInter", (DL_FUNC) &_jres_biliInter, 5},
+    {"_jres_reshape_submatToMat", (DL_FUNC) &_jres_reshape_submatToMat, 5},
     {"_jres_convolve3cpp", (DL_FUNC) &_jres_convolve3cpp, 2},
-    {"_jres_d2gauss_cpp", (DL_FUNC) &_jres_d2gauss_cpp, 4},
     {"_jres_expandGrid_rcpp", (DL_FUNC) &_jres_expandGrid_rcpp, 2},
     {"_jres_matsymminf2f1", (DL_FUNC) &_jres_matsymminf2f1, 3},
     {"_jres_matsymminf2", (DL_FUNC) &_jres_matsymminf2, 2},
@@ -188,8 +235,10 @@ static const R_CallMethodDef CallEntries[] = {
     {"_jres_matsumup", (DL_FUNC) &_jres_matsumup, 1},
     {"_jres_minmaxMat", (DL_FUNC) &_jres_minmaxMat, 1},
     {"_jres_getBBdim_rcpp", (DL_FUNC) &_jres_getBBdim_rcpp, 3},
-    {"_jres_lapOfG", (DL_FUNC) &_jres_lapOfG, 7},
-    {"_jres_pickPeaks_rcpp", (DL_FUNC) &_jres_pickPeaks_rcpp, 6},
+    {"_jres_lapOfG", (DL_FUNC) &_jres_lapOfG, 8},
+    {"_jres_pickPeaks_rcpp", (DL_FUNC) &_jres_pickPeaks_rcpp, 7},
+    {"_jres_d2gauss_cpp", (DL_FUNC) &_jres_d2gauss_cpp, 4},
+    {"_jres_d2cauchy_cpp", (DL_FUNC) &_jres_d2cauchy_cpp, 4},
     {NULL, NULL, 0}
 };
 

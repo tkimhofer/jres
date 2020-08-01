@@ -1,6 +1,9 @@
 #include <Rcpp.h>
 using namespace Rcpp;
 
+
+// [[Rcpp::plugins(cpp11)]]
+
 //' @title List all combinations of two vectors
 //' @param x Vector A
 //' @param y Vector B
@@ -203,7 +206,8 @@ IntegerVector getBBdim_rcpp(NumericVector ppm, int i, double add) {
 //' @param npix SD parameter values used to create Gaussians - should span expected Jres signal fwhm range 
 //' @return List, 1st element: Best matching Gaussian SD (peak size), 2nd element: Evaluation criterium for all tested SD
 // [[Rcpp::export]]
-List lapOfG(NumericMatrix sub, NumericVector f1hz, NumericVector f2hz, double cent_f1hz, double cent_f2hz, double sf, NumericVector npix) {
+List lapOfG(NumericMatrix sub, NumericVector f1hz, NumericVector f2hz, double cent_f1hz, double cent_f2hz, double sf, 
+            NumericVector npix, bool dbug) {
   
   //npix seq(0.01, 3, by=0.05)
   
@@ -226,6 +230,7 @@ List lapOfG(NumericMatrix sub, NumericVector f1hz, NumericVector f2hz, double ce
   lapl.attr("dim") = Dimension(3, 3);
   NumericMatrix laplm = as<NumericMatrix>(lapl);
   NumericVector out;
+  List out1;
   
   List retout;
   int count = 0;
@@ -234,12 +239,14 @@ List lapOfG(NumericMatrix sub, NumericVector f1hz, NumericVector f2hz, double ce
   
   for(int i = 0; i < npix.size(); ++i) {
     
-    NumericVector sig = {npix(i), npix(i)*1.3};
+    NumericVector sig = {npix(i), npix(i)*2};
+    //NumericVector sig = {npix(i), npix(i)};
     NumericVector mus = {cent_f1hz, cent_f2hz};
     NumericVector ta = te( _ , 0 );
     
-    Function d2gauss_cpp( "d2gauss_cpp" );
-    NumericVector gay1 = as<NumericVector>(d2gauss_cpp(te(_,0),te(_,1), mus, sig));
+    //Function d2gauss_cpp( "d2gauss_cpp" );
+    Function d2cauchy_cpp( "d2cauchy_cpp" );
+    NumericVector gay1 = as<NumericVector>(d2cauchy_cpp(te(_,0),te(_,1), mus, sig(0)));
     
     //NumericVector gay1 = d2gauss_cpp(x = te(_,0), y = te(_,1), mu = mus, sigma = sig);
     gay1.attr("dim") = Dimension(f1hz.size(), f2hz.size());
@@ -265,16 +272,30 @@ List lapOfG(NumericMatrix sub, NumericVector f1hz, NumericVector f2hz, double ce
       
       if( sdiff > 0.01)
         ++count;
-      
-    if( count == 3 )
+
+   
+    if( count == 3 & dbug == false)
       break;
     
     
+    if(dbug) out1.push_back(List::create(
+        _["sig"]=sig, 
+        _["Gauss"]=gay1, 
+        _["laplOfGauss"]=gaula2, 
+        _["Norm_LoG"]=inter, 
+        _["sub_smooth"]=sub_smooth,  
+        _["minmax_subsmooth"]=ssmomm, 
+        _["sum_minmaxSubSmooth_Norm_Log"]=sim,  
+        _["Squaredsum_minmaxSubSmooth_Norm_Log"]=inter1, 
+         _["out"]=out, 
+         _["sdiff_frac"]= sdiff));
+  
     
-    
-    //out.push_back(List::create(gaula2, inter, sub_smooth, ssmomm, sim, inter1, simadd));
   }
   
+  if(dbug) return out1;
+  
+  // return out1;
   int idx_min = which_min(out);
   retout = List::create(npix(idx_min), out, npix);
   return retout;
@@ -291,13 +312,13 @@ List lapOfG(NumericMatrix sub, NumericVector f1hz, NumericVector f2hz, double ce
 //' @param sf Spectrometer frequency
 //' @return List of dataframes summarising the detected peaks/features
 // [[Rcpp::export]]
-List pickPeaks_rcpp(NumericMatrix jr, NumericVector f1hz, NumericVector f2ppm, double noise, double boundary, double sf) {
+List pickPeaks_rcpp(NumericMatrix jr, NumericVector f1hz, NumericVector f2ppm, double noise, double boundary, double sf, bool dbug) {
   
   NumericVector f1ppm = f1hz / sf;
   NumericVector f2hz = f2ppm * sf;
   
   NumericVector dfb = diff(f1hz); // 0.3 Hz in one increment
-  double doub = boundary / median(dfb); // if boundary is 10, then 34 indices increments amounts to about 10 Hz
+  double doub =  boundary / median(dfb) ; // if boundary is 10, then 34 indices increments amounts to about 10 Hz in normal jres (high res jres, up to 70 increments amount to 10 Hz)
   int add_row = round( doub ) +1 ; // if boundary is 10, then 34 indices increments amounts to about 10 Hz
   
   NumericVector df2b = diff(f2hz);
@@ -328,113 +349,267 @@ List pickPeaks_rcpp(NumericMatrix jr, NumericVector f1hz, NumericVector f2ppm, d
   String sym;
   List res;
   NumericMatrix sub_sym;
-  // define npix for LoG (sigma)
   
+  // 
+  if (dbug)  {
+    int ind_max_row;
+    int ind_max_col;
+
+    double max_val = 0;
+
+    // find maximum value
+    for(int i = 1; i < (n-1); ++i) {
+      for(int j = 1; j < (m-1); ++j) {
+
+        if(jr(i,j) > max_val) {
+          ind_max_row = i;
+          ind_max_col = j;
+          max_val = jr(i,j);
+        }
+
+      }}
+
+    
+    IntegerVector out = {ind_max_row, ind_max_col};
+    sym = "no";
+    // define center in hz and ppm
+    double cent_f1hz_sub = f1hz(ind_max_row);
+    double cent_f2hz_sub = f2hz(ind_max_col);
+    
+    int i = ind_max_row;
+    int j = ind_max_col;
+    
+    // create sub matrix that can be input for LoG
+    // get lower and upper boundary (in case add_col/add_row exeed matrix dimennsions)
+    int f1l_idx = getBoundary(i, add_row, jr.nrow()-1, '-');
+    int f1h_idx = getBoundary(i, add_row, jr.nrow()-1, '+');
+    
+    int f2l_idx = getBoundary(j, add_col, jr.ncol()-1, '-');
+    int f2h_idx = getBoundary(j, add_col, jr.ncol()-1, '+');
+    
+    // IntegerVector rowidx = {f1l_idx, f1h_idx};
+    // IntegerVector colidx = {f2l_idx, f2h_idx};
+    
+    // define submatrix that can be inputed into LoG
+    NumericMatrix sub = jr( Range(f1l_idx, f1h_idx), Range(f2l_idx, f2h_idx)); // submatrix
+    
+    // update f1 hz and f2 ppm range for sub
+    NumericVector f1hz_upd = f1hz[Range(f1l_idx, f1h_idx)];
+    NumericVector f2hz_upd = f2hz[Range(f2l_idx, f2h_idx)];
+    
+    // define indices for center position in sub
+    //IntegerVector out_upd = {(out(0) - (f1l_idx)), (out(1) - (f2l_idx))}; // indices of max in submatrix
+    
+    // get center index of sub and symmetrise
+    int cent_f1_idx = i - f1l_idx ;
+    int cent_f2_idx = j - f2l_idx ;
+    
+    // define center in hz and ppm
+    double cent_f1hz_upd = f1hz_upd(cent_f1_idx);
+    double cent_f2hz_upd = f2hz_upd(cent_f2_idx);
+    
+    // include function here to perform LoG for peak matching
+    // List logres = lapOfG(sub, f1hz_upd, f2hz_upd, cent_f1hz_sub, cent_f2hz_sub, sf, npix);
+    List logres = lapOfG(sub, f1hz_upd, f2hz_upd, cent_f1hz_sub, cent_f2hz_sub, sf, npix, dbug=false);
+    double gsd_ori = logres[0];
+    double add_gsd = gsd_ori;
+    
+    // define peak bounding box for prediction with tf, this is in Hz
+    double add1_f1 = add_gsd * 1;
+    double add1_f2 = add_gsd * 5;
+    //
+    double doub_feat = add1_f1 / median(dfb);
+    int add_row_feat = round( doub_feat ) + 1;
+    // //
+    double doub1_feat = add1_f2 / median(df2b);
+    int add_col_feat = round( doub1_feat ) +1;
+    //
+    //
+    // IntegerVector d_f1(2) ;
+    // IntegerVector d_f2(2) ;
+    
+
+    int f1l_idx_f = getBoundary(i, add_row_feat, jr.nrow()-1, '-');
+    int f1h_idx_f = getBoundary(i, add_row_feat, jr.nrow()-1, '+');
+    
+    int f2l_idx_f = getBoundary(j, add_col_feat, jr.ncol()-1, '-');
+    int f2h_idx_f = getBoundary(j, add_col_feat, jr.ncol()-1, '+');
+    
+    // d_f1(0) = getBoundary(i, add_row_feat, jr.nrow()-1, '-');
+    // d_f1(1) = getBoundary(i, add_row_feat, jr.nrow()-1, '+');
+    //
+    // d_f2(0) = getBoundary(j, add_col_feat, jr.ncol()-1, '-');
+    // d_f2(1) = getBoundary(j, add_col_feat, jr.ncol()-1, '+');
+    
+    
+    // //
+    // //Integer d_f2 = {(which_min( abs(( f2hz[j] - add1_f2 ) - f2hz ))),  (which_max( abs(( f2hz[i] - add1_f2 ) - f1hz )))};
+    //
+    // Rcout << d_f1 << "\n";
+    // Rcout << d_f2 << "\n";
+    NumericMatrix feat = jr( Range(f1l_idx_f, f1h_idx_f) , Range(f2l_idx_f, f2h_idx_f) );
+    
+    List out_debug =  List::create(_["sf"]=sf,
+                                   _["npix"]=npix,
+                                   _["f2h_idx_f"]=f2h_idx_f,
+                                   _["f2l_idx_f"]=f2l_idx_f,
+                                   _["n"] = n,
+                                   _["m"] = m,
+                                   _["feat"]=feat,
+                                     _["add_col_feat"]=add_col_feat,
+                                     _["doub1_feat"]=doub1_feat,
+                                     _["add_row_feat"]=add_row_feat,
+                                     _["doub_feat"]=doub_feat,
+                                     _["add1_f1"]=add1_f1,
+                                     _["add1_f2"]=add1_f2,
+                                    _["add_gsd"]=add_gsd,
+                                    _["sub"]=sub,
+                                      _["f1hz_upd"]=f1hz_upd,
+                                     _["f2hz_upd"]=f2hz_upd,
+                                      _["cent_f1hz_upd"]=cent_f1hz_upd,
+                                      _["cent_f2hz_upd"]=cent_f2hz_upd,
+                                     // _["idx_max_row"]=ind_max_row+1,
+                                     // _["idx_max_col"]=ind_max_col,
+                                     
+                                      _["max_val"]=max_val
+    );
+    
+    // 
+    // 
+    // List out_debug =  List::create(
+    //   _["sf"]=sf,
+    //   _["npix"]=npix,
+    //   _["n"] = n,
+    //   _["m"] = m,
+    //   _["f2h_idx_f"]=f2h_idx_f,
+    //   _["f2l_idx_f"]=f2l_idx_f,
+    //   _["feat"]=feat,
+    //   _["add_col_feat"]=add_col_feat,
+    //   _["doub1_feat"]=doub1_feat,
+    //   _["add_row_feat"]=add_row_feat,
+    //   _["doub_feat"]=doub_feat,
+    //   _["add1_f1"]=add1_f1,
+    //   _["add1_f2"]=add1_f2,
+    //  _["add_gsd"]=add_gsd,
+    //   _["sub"]=sub,
+    //   _["f1hz_upd"]=f1hz_upd,
+    //  _["f2hz_upd"]=f2hz_upd,
+    //   _["cent_f1_idx"]=cent_f1hz_upd,
+    //   _["cent_f2hz_upd"]=cent_f2hz_upd,
+    //   _["idx_max_row"]=ind_max_row+1,
+    //  _["idx_max_col"]=ind_max_col+1,
+    //  _["max_val"]=max_val);
+    // 
+    return( out_debug );
+  }
+  
+
+  // define npix for LoG (sigma)
+
   for(int i = 1; i < (n-1); ++i) {
     for(int j = 1; j < (m-1); ++j) {
-      
+
       if(jr(i,j) > jr(i-1,j) & jr(i,j) > jr(i+1,j) & jr(i,j) > jr(i,j-1) & jr(i,j) > jr(i,j+1) & jr(i,j) > noise) {
-        
+
         IntegerVector out = {i, j};
         sym = "no";
         // define center in hz and ppm
         double cent_f1hz_sub = f1hz(i);
         double cent_f2hz_sub = f2hz(j);
-        
-        
+
+
         // create sub matrix that can be input for LoG
         // get lower and upper boundary (in case add_col/add_row exeed matrix dimennsions)
         int f1l_idx = getBoundary(i, add_row, jr.nrow()-1, '-');
         int f1h_idx = getBoundary(i, add_row, jr.nrow()-1, '+');
-        
+
         int f2l_idx = getBoundary(j, add_col, jr.ncol()-1, '-');
         int f2h_idx = getBoundary(j, add_col, jr.ncol()-1, '+');
-        
+
         // IntegerVector rowidx = {f1l_idx, f1h_idx};
         // IntegerVector colidx = {f2l_idx, f2h_idx};
-        
+
         // define submatrix that can be inputed into LoG
         NumericMatrix sub = jr( Range(f1l_idx, f1h_idx), Range(f2l_idx, f2h_idx)); // submatrix
-        
+
         // update f1 hz and f2 ppm range for sub
         NumericVector f1hz_upd = f1hz[Range(f1l_idx, f1h_idx)];
         NumericVector f2hz_upd = f2hz[Range(f2l_idx, f2h_idx)];
-        
+
         // define indices for center position in sub
         //IntegerVector out_upd = {(out(0) - (f1l_idx)), (out(1) - (f2l_idx))}; // indices of max in submatrix
-        
+
         // get center index of sub and symmetrise
         int cent_f1_idx = i - f1l_idx ;
         int cent_f2_idx = j - f2l_idx ;
-        
+
         // define center in hz and ppm
         double cent_f1hz_upd = f1hz_upd(cent_f1_idx);
         double cent_f2hz_upd = f2hz_upd(cent_f2_idx);
-       
+
         // include function here to perform LoG for peak matching
         // List logres = lapOfG(sub, f1hz_upd, f2hz_upd, cent_f1hz_sub, cent_f2hz_sub, sf, npix);
-        List logres = lapOfG(sub, f1hz_upd, f2hz_upd, cent_f1hz_sub, cent_f2hz_sub, sf, npix);
+        List logres = lapOfG(sub, f1hz_upd, f2hz_upd, cent_f1hz_sub, cent_f2hz_sub, sf, npix, dbug=false);
         double gsd_ori = logres[0];
         double add_gsd = gsd_ori;
 
-       
-       // re-do lapOfG after f2 axis symmetrisation (peak overlap results in too small bb) 
+
+       // re-do lapOfG after f2 axis symmetrisation (peak overlap results in too small bb)
         if (gsd_ori < 0.25 ) {
           sub_sym = matsymminf2f1(sub, cent_f1_idx, cent_f2_idx);
-          List logres_sym = lapOfG(sub_sym, f1hz_upd, f2hz_upd, cent_f1hz_sub, cent_f2hz_sub, sf, npix);
+          List logres_sym = lapOfG(sub_sym, f1hz_upd, f2hz_upd, cent_f1hz_sub, cent_f2hz_sub, sf, npix, dbug=false);
           add_gsd = logres_sym[0];
           sym = "yes";
         }
-          
-        
+
+
         // define bounding box with log sd value
-        
+
         // characterise signal
 
-        
-        // define peak bounding box for prediction with tf
+        // define peak bounding box for prediction with tf, this is in Hz
         double add1_f1 = add_gsd * 1;
-        double add1_f2 = add_gsd * 1;
-// 
+        double add1_f2 = add_gsd * 5;
+//
         double doub_feat = add1_f1 / median(dfb);
         int add_row_feat = round( doub_feat ) + 1;
         // //
         double doub1_feat = add1_f2 / median(df2b);
         int add_col_feat = round( doub1_feat ) +1;
-        // 
-        // 
+        //
+        //
         IntegerVector d_f1(2) ;
         IntegerVector d_f2(2) ;
         //
-        
-        
+
+
         int f1l_idx_f = getBoundary(i, add_row_feat, jr.nrow()-1, '-');
         int f1h_idx_f = getBoundary(i, add_row_feat, jr.nrow()-1, '+');
-        
+
         int f2l_idx_f = getBoundary(j, add_col_feat, jr.ncol()-1, '-');
         int f2h_idx_f = getBoundary(j, add_col_feat, jr.ncol()-1, '+');
-        
+
         // d_f1(0) = getBoundary(i, add_row_feat, jr.nrow()-1, '-');
         // d_f1(1) = getBoundary(i, add_row_feat, jr.nrow()-1, '+');
-        // 
+        //
         // d_f2(0) = getBoundary(j, add_col_feat, jr.ncol()-1, '-');
         // d_f2(1) = getBoundary(j, add_col_feat, jr.ncol()-1, '+');
 
-        
-        // // 
+
+        // //
         // //Integer d_f2 = {(which_min( abs(( f2hz[j] - add1_f2 ) - f2hz ))),  (which_max( abs(( f2hz[i] - add1_f2 ) - f1hz )))};
-        // 
+        //
         // Rcout << d_f1 << "\n";
         // Rcout << d_f2 << "\n";
        NumericMatrix feat = jr( Range(f1l_idx_f, f1h_idx_f) , Range(f2l_idx_f, f2h_idx_f) );
-        
-        
-        
-        DataFrame outs = DataFrame::create( _["P.peakOri"] = 1, 
-                                            _["cent.f1"] =cent_f1hz_sub,  
-                                            _["cent.f2"] = cent_f2hz_sub / sf, 
-                                            _["cent.f1_sub_idx"] =cent_f1_idx,  
-                                            _["cent.f2_sub_idx"] = cent_f2_idx, 
+
+
+
+        DataFrame outs = DataFrame::create( _["P.peakOri"] = 1,
+                                            _["cent.f1"] =cent_f1hz_sub,
+                                            _["cent.f2"] = cent_f2hz_sub / sf,
+                                            _["cent.f1_sub_idx"] =cent_f1_idx,
+                                            _["cent.f2_sub_idx"] = cent_f2_idx,
                                             _["LoG.hz_ori"] = gsd_ori,
                                             _["doub"] = doub,
                                             _["add_row"] = add_row,
@@ -442,8 +617,8 @@ List pickPeaks_rcpp(NumericMatrix jr, NumericVector f1hz, NumericVector f2ppm, d
                                             _["add_col"] = add_col,
                                             _["add_row_feat"] = add_row_feat,
                                             _["add_col_feat"] = add_col_feat,
-                                            _["bb.width.f1"] = add_gsd,
-                                            _["bb.width.f2"] = add_gsd,
+                                            _["bb.width.f1"] = add1_f1,
+                                            _["bb.width.f2"] = add1_f2,
                                             _["f1.idx"] = i,
                                             _["f2.idx"] = j,
                                             // _["df1_0"] = d_f1(0),
@@ -459,21 +634,43 @@ List pickPeaks_rcpp(NumericMatrix jr, NumericVector f1hz, NumericVector f2ppm, d
                                              _["Int"] = jr(i,j),
                                              _["sym"] = sym
         );
-        
-        // 
+
+        //
         List sblist =  List::create(_["info"]=outs,
                                     _["sub"]=feat
                                     );
         res.push_back(sblist);
-        
+
       }
-      
+
     }
-    
+
   }
-  
+
   return(res);
+
+}
+
+
+//' @title Generate 2D Gaussian distribution
+//' @param x description of first dimensions (e.g. ppm values)
+//' @param y description of second dimensions (e.g. Hz values)
+//' @param mu distribution's center position using coordinate in x and y dimension
+//' @param sigma distribution's spread (standard deviation) in x and y dimension
+//' @return Numeric vector of coordinates
+// [[Rcpp::export]]
+Rcpp::NumericVector d2gauss_cpp(NumericVector x, NumericVector y, NumericVector mu, NumericVector sigma) {
+  static const double pi = 3.141592653589;
   
+  double sprod = sigma(0) * sigma(1);
+  
+  NumericVector expo = (-1)*((pow((x-mu(0)), 2.0)/(2*pow(sigma(0), 2.0))) + (pow((y-mu(1)), 2.0)/(2*pow(sigma(1), 2.0))));
+  
+  double basis = (1/(2*pi*sprod));
+  
+  NumericVector out = basis * exp(expo);
+  
+  return out;
 }
 
 
@@ -481,48 +678,21 @@ List pickPeaks_rcpp(NumericMatrix jr, NumericVector f1hz, NumericVector f2ppm, d
 
 
 
+//' @title Generate 2D Cauchy distribution
+//' @param x description of first dimensions (e.g. ppm values)
+//' @param y description of second dimensions (e.g. Hz values)
+//' @param mu distribution's center position using coordinate in x and y dimension
+//' @param sigma distribution's spread (standard deviation) in x and y dimension
+//' @return Numeric vector of coordinates
+// [[Rcpp::export]]
+Rcpp::NumericVector d2cauchy_cpp(NumericVector x, NumericVector y, NumericVector mu, const double gamma) {
+  static const double pi = 3.141592653589;
 
+  NumericVector denom_part = 1+ ( pow(x-mu(0), 2) + pow(y-mu(1), 2) + pow(gamma, 2));
+  NumericVector out = ( 1/(2*pi) ) * ( gamma / pow(denom_part, 1.5) );
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  return out;
+}
 
 
 
