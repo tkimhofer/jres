@@ -19,5 +19,5 @@ projFeat_f1Tof2(plist, jr, sf, lw.ppm)
 Function uses cauchy distribution (aka Lorentz distr) parameterised with max feature position on f2+f1 to determine location and 1D fwhm estimate to determine scale. Cauchy is scaled in intensity according to observed intensity of the resp. feature.
 }
 \author{
-[Torben Kimhofer](https://tkimhofer.com)
+torben.kimhofer@murdoch.edu.au
 }

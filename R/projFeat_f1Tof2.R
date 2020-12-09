@@ -4,17 +4,14 @@
 #' @param jr Jres spectrum
 #' @param sf Spectrometer frequency (MHz)
 #' @param lwi estimated full widht at half max (fwhm) of 1D (usually TSP signal is fine, see spec.qc function)
-#' @author [Torben Kimhofer](https://tkimhofer.com)
+#' @author torben.kimhofer@murdoch.edu.au
 #' @export
-
 
 
 projFeat_f1Tof2=function(plist, jr, sf, lw.ppm){
   
   f2.ppm=as.numeric(colnames(jr))
   #f1.hz=as.numeric(rownames(jr))
-  
-  
   
   projM=lapply(1:nrow(plist), function(i, ppl=plist, js=jr, lw=lw.ppm, f2p=f2.ppm){
     feat=ppl[i,]

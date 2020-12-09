@@ -4,7 +4,7 @@
 \alias{read2d}
 \title{Read-in J-coupling resolved NMR spectra generated with a Bruker spectrometer}
 \usage{
-read2d(path, procs_exp = 1, n_max = 1000, interp = F)
+read2d(path, procs_exp = 1, n_max = 1000, interp = T)
 }
 \arguments{
 \item{path}{File path to J-res NMR experiment(s)}

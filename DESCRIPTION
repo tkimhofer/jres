@@ -14,8 +14,7 @@ Imports:
   fields, 
   gridExtra, 
   scales, 
-  colorRamps, 
-  MetaboMate
+  colorRamps
 LinkingTo: Rcpp, RcppArmadillo
-RoxygenNote: 7.0.2
+RoxygenNote: 7.1.1
 SystemRequirements: C++11
