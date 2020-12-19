@@ -12,7 +12,8 @@ Imports:
   ggplot2, 
   reshape2, 
   fields, 
-  gridExtra, 
+  gridExtra,
+  metabom8,
   scales, 
   colorRamps
 LinkingTo: Rcpp, RcppArmadillo

@@ -17,7 +17,7 @@
 #' @importFrom reshape2 melt
 #' @importFrom scales pretty_breaks
 #' @importFrom colorRamps matlab.like2
-#' @importFrom MetaboMate get.idx
+#' @importFrom metabom8 get.idx
 
 plotjres_overlay1D_bboxNull=function(ds, t2.lim=c(3,3.1), t1.lim=c(-10,10), spec.1d, ppm.1d, z.probs=0,  SF=600 , bbox,  title='', pPeak= 0.6, tilt=F, addProjpp=NULL){
 
